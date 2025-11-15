@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { CiCirclePlus } from "react-icons/ci";
 
@@ -9,7 +9,7 @@ export default function Home() {
   };
   const [stories, setStories] = useState<Story[]>([]);
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const storiesStr = localStorage.getItem("stories");
     if (!storiesStr) return;
