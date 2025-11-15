@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import "./App.css";
 import Home from "./components/layout/Home";
 
