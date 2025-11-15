@@ -1,17 +1,33 @@
 import React, { useEffect, useRef } from "react";
 import { useState } from "react";
 import { CiCirclePlus } from "react-icons/ci";
+
 export default function Home() {
-  const [stories, setStories] = useState<(string | ArrayBuffer | null)[]>([]);
+  type Story = {
+    data: string;
+    createdAt: number;
+  };
+  const [stories, setStories] = useState<Story[]>([]);
 
   const fileInputRef = useRef(null);
   useEffect(() => {
-    const stories = localStorage.getItem("stories");
-    if (stories && stories !== "null") {
-      setStories(JSON.parse(stories));
-      console.log("Stories:", stories);
+    const storiesStr = localStorage.getItem("stories");
+    if (!storiesStr) return;
+
+    try {
+      const saved: Story[] = JSON.parse(storiesStr);
+      const now = Date.now();
+      const filtered = saved.filter(
+        (s) => now - s.createdAt < 24 * 60 * 60 * 1000
+      );
+      setStories(filtered);
+      localStorage.setItem("stories", JSON.stringify(filtered));
+    } catch (e) {
+      console.error("Failed to parse stories from localStorage", e);
+      localStorage.removeItem("stories");
     }
   }, []);
+
   const handleIconClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -25,7 +41,10 @@ export default function Home() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onloadend = () => {
-        const base64data = reader.result;
+        const base64data = {
+          data: reader.result as string,
+          createdAt: Date.now(),
+        };
         console.log("base64data:", base64data);
         const newstories = [...stories, base64data];
         console.log("story:", newstories);
@@ -60,7 +79,9 @@ export default function Home() {
                 key={index}
                 className="justify-center items-center w-10 h-10 object-fill rounded-full overflow-hidden border-2 border-black "
               >
-                <img src={story} alt="story" />
+                {typeof story.data === "string" && (
+                  <img src={story.data} alt="story" />
+                )}
               </div>
             ))}
         </div>
