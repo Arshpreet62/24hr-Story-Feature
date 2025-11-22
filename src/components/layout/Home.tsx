@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { use, useEffect, useRef } from "react";
 import { useState } from "react";
 import { CiCirclePlus } from "react-icons/ci";
+import { DiVim } from "react-icons/di";
 
 export default function Home() {
   type Story = {
@@ -8,12 +9,66 @@ export default function Home() {
     createdAt: number;
   };
   const [stories, setStories] = useState<Story[]>([]);
+  const [currentStory, setCurrentStory] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const minSwipeDistance = 50;
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    const distance = touchEndX.current - touchStartX.current;
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // swipe right -> previous story
+        setCurrentStory((prev) => (prev !== null ? Math.max(prev - 1, 0) : 0));
+      } else if (distance < 0) {
+        // swipe left -> next story
+        setCurrentStory((prev) =>
+          prev !== null ? Math.min(prev + 1, stories.length - 1) : 0
+        );
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (currentStory !== null) {
+      setProgress(0);
+      const startTime = Date.now();
+
+      const updateProgress = () => {
+        const elapsed = Date.now() - startTime;
+        const newProgress = Math.min((elapsed / 3000) * 100, 100);
+        setProgress(newProgress);
+        if (newProgress < 100) {
+          requestAnimationFrame(updateProgress);
+        }
+      };
+
+      updateProgress();
+    }
+  }, [currentStory]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    if (currentStory !== null && currentStory < stories.length - 1) {
+      const timeoutId = setTimeout(() => {
+        setCurrentStory((prev) => (prev === null ? null : prev + 1));
+      }, 3000);
+      return () => clearTimeout(timeoutId);
+    } else if (currentStory === stories.length - 1) {
+      // Optional: reset or pause at the last story
+      const timeoutId = setTimeout(() => {
+        setCurrentStory(null);
+      }, 3000);
+    }
+  }, [currentStory, stories.length]);
+
+  useEffect(() => {
     const storiesStr = localStorage.getItem("stories");
     if (!storiesStr) return;
-
     try {
       const saved: Story[] = JSON.parse(storiesStr);
       const now = Date.now();
@@ -56,11 +111,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col  bg-gray-100 items-center justify-start min-h-screen w-screen">
-      <h1 className="text-3xl font-bold text-center text-gray-800">
+      <h1 className="text-3xl font-bold text-center text-gray-800 ">
         24 Hour Story Feature
       </h1>
-      {
-        <div className="flex flex-row border-2 border-black h-15 w-120 items-center justify-start px-1">
+      {currentStory === null ? (
+        <div className="flex flex-row border-2 border-black h-15 w-full max-w-120 items-center justify-start ">
           <input
             type="file"
             accept=".jpg, .jpeg"
@@ -77,6 +132,7 @@ export default function Home() {
             stories.map((story, index) => (
               <div
                 key={index}
+                onClick={() => setCurrentStory(index)}
                 className="justify-center items-center w-10 h-10 object-fill rounded-full overflow-hidden border-2 border-black "
               >
                 {typeof story.data === "string" && (
@@ -85,7 +141,31 @@ export default function Home() {
               </div>
             ))}
         </div>
-      }
+      ) : (
+        <div className="flex flex-col  h-100 w-full max-w-120 items-center justify-start ">
+          <div className="flex  w-full h-5">
+            {stories &&
+              stories.map((story, index) => (
+                <div
+                  key={index}
+                  className="flex-1 border-2 border-gray-600 bg-white"
+                >
+                  <div
+                    style={
+                      currentStory === index
+                        ? { width: `${progress}%` }
+                        : { width: "0%" }
+                    }
+                    className={`bg-linear-to-r from-[#c6ffdd] via-[#fbd786] to-[#f7797d] h-full  `}
+                  ></div>
+                </div>
+              ))}
+          </div>
+          <div className="h-max w-full border-gray-600 border-2 overflow-hidden">
+            <img src={stories[currentStory].data} alt="story" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
