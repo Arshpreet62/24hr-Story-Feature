@@ -1,7 +1,6 @@
-import { use, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { CiCirclePlus } from "react-icons/ci";
-import { DiVim } from "react-icons/di";
 
 export default function Home() {
   type Story = {
@@ -23,11 +22,13 @@ export default function Home() {
     if (Math.abs(distance) > minSwipeDistance) {
       if (distance > 0) {
         // swipe right -> previous story
-        setCurrentStory((prev) => (prev !== null ? Math.max(prev - 1, 0) : 0));
+        setCurrentStory((prev) =>
+          prev !== null ? (prev - 1 ? prev - 1 : null) : null
+        );
       } else if (distance < 0) {
         // swipe left -> next story
         setCurrentStory((prev) =>
-          prev !== null ? Math.min(prev + 1, stories.length - 1) : 0
+          prev !== null ? (stories.length > prev + 1 ? prev + 1 : null) : null
         );
       }
     }
@@ -162,7 +163,12 @@ export default function Home() {
               ))}
           </div>
           <div className="h-max w-full border-gray-600 border-2 overflow-hidden">
-            <img src={stories[currentStory].data} alt="story" />
+            <img
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+              src={stories[currentStory].data}
+              alt="story"
+            />
           </div>
         </div>
       )}
