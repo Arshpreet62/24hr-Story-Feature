@@ -19,17 +19,24 @@ export default function Home() {
   const onTouchEnd = (e: React.TouchEvent) => {
     touchEndX.current = e.changedTouches[0].screenX;
     const distance = touchEndX.current - touchStartX.current;
+
     if (Math.abs(distance) > minSwipeDistance) {
       if (distance > 0) {
         // swipe right -> previous story
-        setCurrentStory((prev) =>
-          prev !== null ? (prev - 1 ? prev - 1 : null) : null
-        );
+        setCurrentStory((prev) => {
+          if (prev === null) return null;
+          // if already at first story, go back to list (null)
+          if (prev === 0) return null;
+          return prev - 1;
+        });
       } else if (distance < 0) {
         // swipe left -> next story
-        setCurrentStory((prev) =>
-          prev !== null ? (stories.length > prev + 1 ? prev + 1 : null) : null
-        );
+        setCurrentStory((prev) => {
+          if (prev === null) return null;
+          // if at last story, go back to list (null)
+          if (prev === stories.length - 1) return null;
+          return prev + 1;
+        });
       }
     }
   };
@@ -54,17 +61,23 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    let timeoutId: number | undefined;
+
     if (currentStory !== null && currentStory < stories.length - 1) {
-      const timeoutId = setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
         setCurrentStory((prev) => (prev === null ? null : prev + 1));
       }, 3000);
-      return () => clearTimeout(timeoutId);
     } else if (currentStory === stories.length - 1) {
-      // Optional: reset or pause at the last story
-      const timeoutId = setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
         setCurrentStory(null);
       }, 3000);
     }
+
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [currentStory, stories.length]);
 
   useEffect(() => {
@@ -146,7 +159,7 @@ export default function Home() {
         <div className="flex flex-col  h-100 w-full max-w-120 items-center justify-start ">
           <div className="flex  w-full h-5">
             {stories &&
-              stories.map((story, index) => (
+              stories.map((_story, index) => (
                 <div
                   key={index}
                   className="flex-1 border-2 border-gray-600 bg-white"
